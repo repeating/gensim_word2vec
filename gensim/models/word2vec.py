@@ -551,6 +551,7 @@ class Word2Vec(utils.SaveLoad):
         total_words = 0
         min_reduce = 1
         vocab = defaultdict(int)
+        vocab_seed = {}
         checked_string_types = 0
         for sentence_no, sentence in enumerate(sentences):
             if not checked_string_types:
@@ -566,8 +567,11 @@ class Word2Vec(utils.SaveLoad):
                     "PROGRESS: at sentence #%i, processed %i words, keeping %i word types",
                     sentence_no, total_words, len(vocab),
                 )
+            prev_word = ''
             for word in sentence:
+                vocab_seed[word] = prev_word
                 vocab[word] += 1
+                prev_word = word
             total_words += len(sentence)
 
             if self.max_vocab_size and len(vocab) > self.max_vocab_size:
@@ -576,6 +580,7 @@ class Word2Vec(utils.SaveLoad):
 
         corpus_count = sentence_no + 1
         self.raw_vocab = vocab
+        self.wv.vocab_seed = vocab_seed
         return total_words, corpus_count
 
     def scan_vocab(self, corpus_iterable=None, corpus_file=None, progress_per=10000, workers=None, trim_rule=None):

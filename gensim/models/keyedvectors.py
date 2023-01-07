@@ -378,7 +378,14 @@ class KeyedVectors(utils.SaveLoad):
     def resize_vectors(self, seed=0):
         """Make underlying vectors match index_to_key size; random-initialize any new rows."""
         target_shape = (len(self.index_to_key), self.vector_size)
-        self.vectors = prep_vectors(target_shape, prior_vectors=self.vectors, seed=seed)
+        seeds = []
+        for word in self.index_to_key:
+            if word == '/tmp.HCFryYqaxR'.lower():
+                print(word, abs(hash(self.vocab_seed[word])))
+            if word == '/tmp.aCeY1EjINl'.lower():
+                print(word, abs(hash(self.vocab_seed[word])))
+            seeds.append(abs(hash(self.vocab_seed[word])))
+        self.vectors = prep_vectors(target_shape, seeds, prior_vectors=self.vectors, seed=seed)
         self.allocate_vecattrs()
         self.norms = None
 
@@ -2101,7 +2108,7 @@ def pseudorandom_weak_vector(size, seed_string=None, hashfxn=hash):
     return (once.random(size).astype(REAL) - 0.5) / size
 
 
-def prep_vectors(target_shape, prior_vectors=None, seed=0, dtype=REAL):
+def prep_vectors(target_shape, seeds, prior_vectors=None, seed=0, dtype=REAL):
     """Return a numpy array of the given shape. Reuse prior_vectors object or values
     to extent possible. Initialize new values randomly if requested.
 
@@ -2111,10 +2118,13 @@ def prep_vectors(target_shape, prior_vectors=None, seed=0, dtype=REAL):
     if prior_vectors.shape == target_shape:
         return prior_vectors
     target_count, vector_size = target_shape
-    rng = np.random.default_rng(seed=seed)  # use new instance of numpy's recommended generator/algorithm
-    new_vectors = rng.random(target_shape, dtype=dtype)  # [0.0, 1.0)
-    new_vectors *= 2.0  # [0.0, 2.0)
-    new_vectors -= 1.0  # [-1.0, 1.0)
+    new_vectors = []
+    for i in range(target_count):
+        rng = np.random.default_rng(seed=seeds[i])  # use new instance of numpy's recommended generator/algorithm
+        new_vectors.append(rng.random(vector_size).astype(dtype))  # [0.0, 1.0)
+    new_vectors = np.array(new_vectors)
+    new_vectors *= 10.0  # [0.0, 2.0)
+    new_vectors -= 5.0  # [-1.0, 1.0)
     new_vectors /= vector_size
     new_vectors[0:prior_vectors.shape[0], 0:prior_vectors.shape[1]] = prior_vectors
     return new_vectors
